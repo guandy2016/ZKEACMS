@@ -1,7 +1,7 @@
 @model ZKEACMS.FormGenerator.Models.FormField
-@{ 
+@{
     string maxLength = "200";
-    Model.Attributes.TryAdd("data-val-length", L("{0}的长度应小于{1}").Text.FormatWith(Model.DisplayName, maxLength));
+    Model.Attributes.TryAdd("data-val-length", L("The max length of {0} is {1}").Text.FormatWith(Model.DisplayName, maxLength));
     Model.Attributes.TryAdd("data-val-length-max", maxLength);
 }
 <div class="form-group size-@Model.Size">
@@ -16,6 +16,7 @@
         </label>
     }
     @Html.TextBox(Model.ID, Model.Value, Model.Attributes)
+    <img src="/Validation/Code" class="validation-code" style="cursor:pointer" onclick="$(this).attr('src','/Validation/Code?v='+new Date().getTime())" />
     <span class="field-validation-valid" data-valmsg-for="@Model.ID" data-valmsg-replace="true"></span>
     @if (Model.Description.IsNotNullAndWhiteSpace())
     {

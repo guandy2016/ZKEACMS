@@ -8,6 +8,7 @@ using Easy.LINQ;
 using Easy.Modules.MutiLanguage;
 using Easy.Options;
 using Easy.ViewPort.Validator;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
@@ -31,17 +32,32 @@ namespace Easy.ViewPort.Descriptor
             this.OrderIndex = 100;
             this.IsShowForEdit = true;
             this.IsShowForDisplay = true;
-            SearchOperator = Query.Operators.Equal;
+            SearchOperator = Query.Operators.None;
         }
         #region Private
+        protected void SetSearch()
+        {
+            if (this.DataType == typeof(string))
+            {
+                this.SearchOperator = Query.Operators.Contains;
+            }
+            else if (this.DataType == typeof(DateTime))
+            {
+                this.SearchOperator = Query.Operators.Range;
+            }
+            else
+            {
+                this.SearchOperator = Query.Operators.Equal;
+            }
 
+        }
+        #endregion
+
+        #region 公共属性
         /// <summary>
         /// 数据类型
         /// </summary>
         public Type ModelType { get; private set; }
-        #endregion
-
-        #region 公共属性
         /// <summary>
         /// 标签类型
         /// </summary>
@@ -137,14 +153,15 @@ namespace Easy.ViewPort.Descriptor
         public virtual Dictionary<string, object> ToHtmlProperties()
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
-
-            if (!Classes.Contains("form-control"))
+            const string formControl = "form-control";
+            const string required = "required";
+            if (!Classes.Contains(formControl))
             {
-                Classes.Add("form-control");
-                if (IsRequired)
-                {
-                    Classes.Add("required");
-                }
+                Classes.Add(formControl);
+            }
+            if (IsRequired && !Classes.Contains(required))
+            {
+                Classes.Add(required);
             }
             result.Add("class", string.Join(" ", Classes));
             result.Add("style", string.Join(";", Styles.ToList(m => string.Format("{0}:{1}", m.Key, m.Value))));
@@ -155,66 +172,65 @@ namespace Easy.ViewPort.Descriptor
                     result.Add(m.Key, m.Value);
                 }
             });
+            result.Add("data-opeartor", (int)SearchOperator);
             return result;
         }
 
         private string GetLocalize(string key)
         {
             var languageService = ServiceLocator.GetService<ILanguageService>();
+            var localize = ServiceLocator.GetService<ILocalize>();
             var cultureOption = ServiceLocator.GetService<IOptions<CultureOption>>();
-            string culture = CultureInfo.CurrentUICulture.Name;
-            if (cultureOption != null && cultureOption.Value.Code.IsNotNullAndWhiteSpace())
+            var translated = localize.GetOrNull(key);
+
+            if (translated == null)
             {
-                culture = cultureOption.Value.Code;
-            }
-            var language = languageService.Get(key, culture);
-            if (language == null)
-            {
-                string lanValue = key;
-                string lanType = "UnKnown";
-                string module = "Unknown";
                 if (key.Contains("@"))
                 {
-                    lanValue = key.Split('@')[1];
-                    var translated = languageService.Get(n => n.LanKey.EndsWith("@" + lanValue) && n.CultureName == culture).FirstOrDefault();
-                    if (translated != null)
+                    string property = key.Split('@')[1];
+                    translated = localize.GetOrNull(property);
+                    if (translated == null)
                     {
-                        lanValue = translated.LanValue;
+                        StringBuilder lanValueBuilder = new StringBuilder();
+                        if (property.Length > 2 && (property.EndsWith("ID") || property.EndsWith("Id")))
+                        {
+                            property = property.Substring(0, property.Length - 2);
+                        }
+                        if (property.Length > 2)
+                        {
+                            for (int i = 0; i < property.Length; i++)
+                            {
+                                char charLan = property[i];
+                                if (i > 0 && char.IsUpper(charLan))
+                                {
+                                    lanValueBuilder.Append(' ');
+                                }
+                                lanValueBuilder.Append(charLan);
+                            }
+                            property = lanValueBuilder.ToString();
+                        }
                     }
                     else
                     {
-                        StringBuilder lanValueBuilder = new StringBuilder();
-                        if (lanValue.EndsWith("ID") || lanValue.EndsWith("Id"))
-                        {
-                            lanValue = lanValue.Substring(0, lanValue.Length - 2);
-                        }
-                        for (int i = 0; i < lanValue.Length; i++)
-                        {
-                            char charLan = lanValue[i];
-                            if (i > 0 && char.IsUpper(charLan))
-                            {
-                                lanValueBuilder.Append(' ');
-                            }
-                            lanValueBuilder.Append(charLan);
-                        }
-                        lanValue = lanValueBuilder.ToString();
+                        property = translated;
                     }
-                    lanType = "EntityProperty";
-                    module = key.Split('@')[0];
-                    language = new LanguageEntity
+                    languageService.Add(new LanguageEntity
                     {
-                        CultureName = culture,
-                        LanValue = lanValue,
+                        CultureName = cultureOption.Value.Code,
+                        LanValue = property,
                         LanKey = key,
-                        LanType = lanType,
-                        Module = module
-                    };
-                    languageService.Add(language);
-                    return language.LanValue;
+                        LanType = "EntityProperty",
+                        Module = key.Split('@')[0]
+                    });
+                    return property;
                 }
-                return key;
+                else
+                {
+                    return key;
+                }
+
             }
-            return language.LanValue;
+            return translated;
         }
     }
 
@@ -250,7 +266,7 @@ namespace Easy.ViewPort.Descriptor
             this.DisplayName = name;
             foreach (ValidatorBase item in this.Validator)
             {
-                item.DisplayName = name;
+                item.DisplayName = () => this.DisplayName;
             }
             return this as T;
         }
@@ -346,12 +362,18 @@ namespace Easy.ViewPort.Descriptor
         public T ShowInGrid(bool show = true)
         {
             this.IsShowInGrid = show;
+            if (this.IsShowInGrid)
+            {
+                SetSearch();
+            }
+
             return this as T;
         }
         public T ShowInGrid(string template)
         {
             this.IsShowInGrid = true;
             this.GridColumnTemplate = template;
+            SetSearch();
             return this as T;
         }
         public T Search(Query.Operators searchOperator)

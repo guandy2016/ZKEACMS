@@ -41,7 +41,7 @@ namespace ZKEACMS.Article.Service
                     return page.Url;
                 }
             }
-            return "~/View-Article";
+            return "~/article-detail";
         }
 
         public override ServiceResult<ArticleListWidget> Add(ArticleListWidget item)
@@ -103,18 +103,6 @@ namespace ZKEACMS.Article.Service
             else
             {
                 articles = _articleService.Get().Where(filter).OrderByDescending(m => m.PublishDate).ToList();
-            }
-
-            var currentArticleType = _articleTypeService.Get(cate == 0 ? currentWidget.ArticleTypeID : cate);
-            if (currentArticleType != null)
-            {
-                var layout = actionContext.HttpContext.GetLayout();
-                if (layout != null && layout.Page != null)
-                {
-                    var page = layout.Page;
-                    //page.Title = (page.Title ?? "") + " - " + currentArticleType.Title;
-                    page.Title = page.Title.IsNullOrWhiteSpace() ? currentArticleType.Title : $"{page.Title} - {currentArticleType.Title}";
-                }
             }
 
             return widget.ToWidgetViewModelPart(new ArticleListWidgetViewModel

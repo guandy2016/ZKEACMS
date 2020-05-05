@@ -22,13 +22,12 @@ namespace ZKEACMS.FormGenerator.Service.Validator
         public bool Validate(FormField field, FormDataItem data, out string message)
         {
             message = string.Empty;
-            message = string.Empty;
             if (field.Name == "ValidCode" && data.FieldValue.IsNotNullAndWhiteSpace())
             {
                 string code = _validate.GetCode();
                 if (!code.Equals(data.FieldValue, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    message = _localize.Get("{0}不正确").FormatWith(field.DisplayName);
+                    message = _localize.Get("{0} is not correct.").FormatWith(field.DisplayName);
                     return false;
                 }
             }

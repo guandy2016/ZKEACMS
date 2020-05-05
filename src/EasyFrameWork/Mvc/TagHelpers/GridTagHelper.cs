@@ -22,11 +22,11 @@ namespace Easy.Mvc.TagHelpers
 {
     public class GridTagHelper : TagHelperBase
     {
-        private const string DefaultClass = "dataTable table table-striped table-bordered";
+        private const string DefaultClass = "dataTable table table-striped table-bordered table-hover";
         private const string DefaultSourceAction = "GetList";
         public const string DefaultEditAction = "Edit";
         public const string DefaultDeleteAction = "Delete";
-        private const string TableStructure = "<div class=\"table-responsive\"><table class=\"{0}\" cellspacing=\"0\" width=\"100%\" data-source=\"{1}\"><thead><tr>{2}</tr></thead><tfoot><tr class=\"search\">{3}</tr></tfoot></table></div>";
+        private const string TableStructure = "<div><table class=\"{0}\" cellspacing=\"0\" width=\"100%\" data-source=\"{1}\"><thead><tr>{2}</tr></thead><tfoot><tr class=\"search\">{3}</tr></tfoot></table></div>";
         private const string TableHeadStructure = "<th data-key=\"{0}\" data-template=\"{1}\" data-order=\"{2}\" data-option=\"{4}\" data-search-operator=\"{5}\" data-data-type=\"{6}\" data-format=\"{7}\">{3}</th>";
         private const string TableSearchStructure = "<th></th>";
         public const string EditLinkTemplate = "<a href=\"{0}\" class=\"glyphicon glyphicon-edit\"></a>";
@@ -96,7 +96,7 @@ namespace Easy.Mvc.TagHelpers
                         string.Empty,
                         WebUtility.HtmlEncode(manager),
                         string.Empty,
-                        ActionLable ?? localize.Get("操作"),
+                        ActionLable ?? localize.Get("Action"),
                         string.Empty,
                         Query.Operators.None,
                         string.Empty,
@@ -133,8 +133,8 @@ namespace Easy.Mvc.TagHelpers
                         }
                         else if (m.DataType == typeof(bool) || m.DataType == typeof(bool?))
                         {
-                            optionBuilder.AppendFormat("{{\"name\":\"{0}\",\"value\":\"{1}\"}},", localize.Get("是"), "true");
-                            optionBuilder.AppendFormat("{{\"name\":\"{0}\",\"value\":\"{1}\"}},", localize.Get("否"), "false");
+                            optionBuilder.AppendFormat("{{\"name\":\"{0}\",\"value\":\"{1}\"}},", localize.Get("Yes"), "true");
+                            optionBuilder.AppendFormat("{{\"name\":\"{0}\",\"value\":\"{1}\"}},", localize.Get("No"), "false");
                         }
                         tableHeaderBuilder.AppendFormat(TableHeadStructure,
                             m.Name.FirstCharToLowerCase(),
